@@ -1,0 +1,11 @@
+{
+  "brand": "",
+  "domain": "https://example.com",
+  "site_lang": "th",
+  "logo_url": "",
+  "contact_link": "",
+  "af_link": "",
+  "navigation_menu": [
+    { "id": 1, "name": "หน้าแรก", "path": "homepage" }
+  ]
+}

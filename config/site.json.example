@@ -6,7 +6,6 @@
   "contact_link": "",
   "af_link": "",
   "navigation_menu": [
-    { "id": 1, "name": "หน้าแรก", "path": "homepage" },
-    { "id": 5, "name": "บทความ", "path": "articles" }
+    { "id": 1, "name": "หน้าแรก", "path": "homepage" }
   ]
 }

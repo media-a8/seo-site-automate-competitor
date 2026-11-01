@@ -1,8 +1,7 @@
 RewriteEngine On
 
-# Articles are always handled by the front controller
-RewriteRule ^articles/?$ index.php [L]
-RewriteRule ^articles/.+\.(html|json)$ index.php [L]
+# Article source files are not public URLs; articles are served at /articles/{slug}
+RewriteRule ^posts(/|$) index.php [L]
 
 # Serve existing files and directories as-is (assets, etc.)
 RewriteCond %{REQUEST_FILENAME} -f [OR]

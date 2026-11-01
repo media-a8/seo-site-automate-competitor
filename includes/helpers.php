@@ -109,7 +109,7 @@ function nav_href(string $path): string
 
 /**
  * Path of the HTML body relative to $root, or ''.
- * pages/{slug}.html, or articles/{slug}.html when the slug is articles/{slug}.
+ * pages/{slug}.html, or posts/{slug}.html when the slug is articles/{slug}.
  */
 function resolve_page_basename(string $root, string $slug): string
 {
@@ -119,8 +119,8 @@ function resolve_page_basename(string $root, string $slug): string
 
     if (strpos($slug, 'articles/') === 0) {
         $name = substr($slug, strlen('articles/'));
-        $file = find_ci_file($root . '/articles', $name . '.html');
-        return $file === '' ? '' : 'articles/' . $file;
+        $file = find_ci_file($root . '/posts', $name . '.html');
+        return $file === '' ? '' : 'posts/' . $file;
     }
 
     $file = find_ci_file($root . '/pages', $slug . '.html');
@@ -129,7 +129,7 @@ function resolve_page_basename(string $root, string $slug): string
 
 /**
  * Path of the meta JSON relative to $root, or ''.
- * meta/{slug}.json, or articles/{slug}.json when the slug is articles/{slug}.
+ * meta/{slug}.json, or posts/{slug}.json when the slug is articles/{slug}.
  */
 function resolve_meta_basename(string $root, string $slug): string
 {
@@ -139,8 +139,8 @@ function resolve_meta_basename(string $root, string $slug): string
 
     if (strpos($slug, 'articles/') === 0) {
         $name = substr($slug, strlen('articles/'));
-        $file = find_ci_file($root . '/articles', $name . '.json');
-        return $file === '' ? '' : 'articles/' . $file;
+        $file = find_ci_file($root . '/posts', $name . '.json');
+        return $file === '' ? '' : 'posts/' . $file;
     }
 
     $file = find_ci_file($root . '/meta', $slug . '.json');
@@ -169,12 +169,12 @@ function page_exists(string $root, string $slug): bool
 function list_articles(string $root): array
 {
     $items = [];
-    foreach (glob($root . '/articles/*.json') ?: [] as $jsonPath) {
+    foreach (glob($root . '/posts/*.json') ?: [] as $jsonPath) {
         $base = basename($jsonPath, '.json');
         if (!preg_match('/^[a-z0-9\-]+$/i', $base)) {
             continue;
         }
-        if (find_ci_file($root . '/articles', $base . '.html') === '') {
+        if (find_ci_file($root . '/posts', $base . '.html') === '') {
             continue;
         }
 
@@ -196,4 +196,28 @@ function list_articles(string $root): array
     });
 
     return $items;
+}
+
+/**
+ * Append an Articles link before the first nav list closes.
+ * Skips when the link is already present, or the list markup is missing.
+ */
+function inject_articles_nav(string $navHtml): string
+{
+    if (strpos($navHtml, 'href="/articles"') !== false) {
+        return $navHtml;
+    }
+
+    $open = strpos($navHtml, '<ul class="nav__list">');
+    if ($open === false) {
+        return $navHtml;
+    }
+
+    $close = strpos($navHtml, '</ul>', $open);
+    if ($close === false) {
+        return $navHtml;
+    }
+
+    $item = '<li><a class="nav__link" href="/articles">บทความ</a></li>';
+    return substr($navHtml, 0, $close) . $item . substr($navHtml, $close);
 }

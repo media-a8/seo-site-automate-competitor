@@ -8,10 +8,16 @@ require $root . '/includes/helpers.php';
 
 $site = load_json($root . '/config/site.json');
 $slug = resolve_slug($_SERVER['REQUEST_URI'] ?? '/');
+$articles = list_articles($root);
 
 $isNotFound = false;
 
-if ($slug === '' || !page_exists($root, $slug)) {
+$missing = $slug === '' || !page_exists($root, $slug);
+if ($slug === 'articles') {
+    $missing = $articles === [];
+}
+
+if ($missing) {
     $isNotFound = true;
     http_response_code(404);
     $slug = page_exists($root, 'notfound') ? 'notfound' : '';
@@ -40,31 +46,46 @@ if ($meta === [] && $slug === 'notfound') {
         ],
     ];
 }
+if ($meta === [] && $slug === 'articles') {
+    $brand = (string) ($site['brand'] ?? '');
+    $meta = [
+        'meta_title' => 'บทความ | ' . $brand,
+        'meta_description' => 'รวมบทความจาก ' . $brand,
+        'social_tags' => [
+            'og_title' => 'บทความ | ' . $brand,
+            'og_description' => 'รวมบทความจาก ' . $brand,
+            'og_image' => (string) ($site['logo_url'] ?? ''),
+            'og_type' => 'website',
+        ],
+    ];
+}
 
 $navPath = $root . '/partials/nav.html';
 $footerPath = $root . '/partials/footer.html';
 $bodyPath = $pageFile !== '' ? ($root . '/' . $pageFile) : '';
 
 $navHtml = is_file($navPath) ? (string) file_get_contents($navPath) : '';
+if ($articles !== []) {
+    $navHtml = inject_articles_nav($navHtml);
+}
 $footerHtml = is_file($footerPath) ? (string) file_get_contents($footerPath) : '';
 $bodyHtml = ($bodyPath !== '' && is_file($bodyPath))
     ? (string) file_get_contents($bodyPath)
     : '<p>เนื้อหาว่าง</p>';
 
 if ($slug === 'articles') {
-    $articles = list_articles($root);
-    if ($articles === []) {
-        $listHtml = '<div class="prose"><p>กำลังเตรียมบทความใหม่ๆ เร็วๆ นี้</p></div>';
-    } else {
-        $cards = '';
-        foreach ($articles as $article) {
-            $cards .= '<a class="card" href="/articles/' . e($article['slug']) . '">'
-                . '<h3>' . e($article['title']) . '</h3>'
-                . '<p>' . e($article['description']) . '</p>'
-                . '</a>';
-        }
-        $listHtml = '<div class="feature-row">' . $cards . '</div>';
+    if ($bodyPath === '' || !is_file($bodyPath)) {
+        $bodyHtml = '<div id="page-articles"><section class="page-hero"><div class="shell"><h1>บทความ</h1></div></section><section class="section"><div class="shell"><!--ARTICLE_LIST--></div></section></div>';
     }
+
+    $cards = '';
+    foreach ($articles as $article) {
+        $cards .= '<a class="card" href="/articles/' . e($article['slug']) . '">'
+            . '<h3>' . e($article['title']) . '</h3>'
+            . '<p>' . e($article['description']) . '</p>'
+            . '</a>';
+    }
+    $listHtml = '<div class="feature-row">' . $cards . '</div>';
 
     $marker = '<!--ARTICLE_LIST-->';
     if (strpos($bodyHtml, $marker) !== false) {

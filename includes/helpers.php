@@ -64,7 +64,10 @@ function resolve_slug(string $requestUri): string
     }
 
     $slug = ltrim($path, '/');
-    // Only allow simple slugs (no nested paths)
+    // Single slug, or one article under /articles/{slug}
+    if (preg_match('#^articles/[a-z0-9\-]+$#i', $slug)) {
+        return strtolower($slug);
+    }
     if (!preg_match('/^[a-z0-9\-]+$/i', $slug)) {
         return '';
     }
@@ -105,31 +108,92 @@ function nav_href(string $path): string
 }
 
 /**
- * Real pages/{slug}.html basename (case-insensitive).
+ * Path of the HTML body relative to $root, or ''.
+ * pages/{slug}.html, or articles/{slug}.html when the slug is articles/{slug}.
  */
 function resolve_page_basename(string $root, string $slug): string
 {
     if ($slug === '') {
         return '';
     }
-    return find_ci_file($root . '/pages', $slug . '.html');
+
+    if (strpos($slug, 'articles/') === 0) {
+        $name = substr($slug, strlen('articles/'));
+        $file = find_ci_file($root . '/articles', $name . '.html');
+        return $file === '' ? '' : 'articles/' . $file;
+    }
+
+    $file = find_ci_file($root . '/pages', $slug . '.html');
+    return $file === '' ? '' : 'pages/' . $file;
 }
 
 /**
- * Real meta/{slug}.json basename (case-insensitive).
+ * Path of the meta JSON relative to $root, or ''.
+ * meta/{slug}.json, or articles/{slug}.json when the slug is articles/{slug}.
  */
 function resolve_meta_basename(string $root, string $slug): string
 {
     if ($slug === '') {
         return '';
     }
-    return find_ci_file($root . '/meta', $slug . '.json');
+
+    if (strpos($slug, 'articles/') === 0) {
+        $name = substr($slug, strlen('articles/'));
+        $file = find_ci_file($root . '/articles', $name . '.json');
+        return $file === '' ? '' : 'articles/' . $file;
+    }
+
+    $file = find_ci_file($root . '/meta', $slug . '.json');
+    return $file === '' ? '' : 'meta/' . $file;
 }
 
 /**
  * Whether a page body file exists.
+ * An article slug also needs its matching JSON.
  */
 function page_exists(string $root, string $slug): bool
 {
+    if (strpos($slug, 'articles/') === 0) {
+        return resolve_page_basename($root, $slug) !== ''
+            && resolve_meta_basename($root, $slug) !== '';
+    }
+
     return resolve_page_basename($root, $slug) !== '';
+}
+
+/**
+ * Published articles: both .html and .json. Newest date first, then slug.
+ *
+ * @return list<array{slug:string,title:string,description:string,date:string}>
+ */
+function list_articles(string $root): array
+{
+    $items = [];
+    foreach (glob($root . '/articles/*.json') ?: [] as $jsonPath) {
+        $base = basename($jsonPath, '.json');
+        if (!preg_match('/^[a-z0-9\-]+$/i', $base)) {
+            continue;
+        }
+        if (find_ci_file($root . '/articles', $base . '.html') === '') {
+            continue;
+        }
+
+        $meta = load_json($jsonPath);
+        $items[] = [
+            'slug' => strtolower($base),
+            'title' => (string) ($meta['meta_title'] ?? ''),
+            'description' => (string) ($meta['meta_description'] ?? ''),
+            'date' => (string) ($meta['date'] ?? ''),
+        ];
+    }
+
+    usort($items, static function (array $a, array $b): int {
+        $byDate = strcmp($b['date'], $a['date']);
+        if ($byDate !== 0) {
+            return $byDate;
+        }
+        return strcmp($a['slug'], $b['slug']);
+    });
+
+    return $items;
 }

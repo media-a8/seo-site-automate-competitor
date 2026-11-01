@@ -173,7 +173,7 @@ $schemaJson = $schemaGraph === []
     <script type="application/ld+json"><?= $schemaJson ?></script>
 <?php endif; ?>
 </head>
-<body class="page-<?= e($slug) ?>">
+<body class="page-<?= e(str_replace('/', '-', $slug)) ?>">
     <a class="skip-link" href="#main">ข้ามไปยังเนื้อหา</a>
     <?= $navHtml ?>
     <main id="main">

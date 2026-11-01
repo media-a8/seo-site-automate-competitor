@@ -27,7 +27,7 @@ if ($slug === '') {
 $pageFile = resolve_page_basename($root, $slug);
 $metaFile = resolve_meta_basename($root, $slug);
 
-$meta = $metaFile !== '' ? load_json($root . '/meta/' . $metaFile) : [];
+$meta = $metaFile !== '' ? load_json($root . '/' . $metaFile) : [];
 if ($meta === [] && $slug === 'notfound') {
     $meta = [
         'meta_title' => 'ไม่พบหน้า | ' . ($site['brand'] ?? ''),
@@ -43,13 +43,36 @@ if ($meta === [] && $slug === 'notfound') {
 
 $navPath = $root . '/partials/nav.html';
 $footerPath = $root . '/partials/footer.html';
-$bodyPath = $pageFile !== '' ? ($root . '/pages/' . $pageFile) : '';
+$bodyPath = $pageFile !== '' ? ($root . '/' . $pageFile) : '';
 
 $navHtml = is_file($navPath) ? (string) file_get_contents($navPath) : '';
 $footerHtml = is_file($footerPath) ? (string) file_get_contents($footerPath) : '';
 $bodyHtml = ($bodyPath !== '' && is_file($bodyPath))
     ? (string) file_get_contents($bodyPath)
     : '<p>เนื้อหาว่าง</p>';
+
+if ($slug === 'articles') {
+    $articles = list_articles($root);
+    if ($articles === []) {
+        $listHtml = '<div class="prose"><p>กำลังเตรียมบทความใหม่ๆ เร็วๆ นี้</p></div>';
+    } else {
+        $cards = '';
+        foreach ($articles as $article) {
+            $cards .= '<a class="card" href="/articles/' . e($article['slug']) . '">'
+                . '<h3>' . e($article['title']) . '</h3>'
+                . '<p>' . e($article['description']) . '</p>'
+                . '</a>';
+        }
+        $listHtml = '<div class="feature-row">' . $cards . '</div>';
+    }
+
+    $marker = '<!--ARTICLE_LIST-->';
+    if (strpos($bodyHtml, $marker) !== false) {
+        $bodyHtml = str_replace($marker, $listHtml, $bodyHtml);
+    } else {
+        $bodyHtml .= $listHtml;
+    }
+}
 
 header('Content-Type: text/html; charset=utf-8');
 require $root . '/includes/layout.php';

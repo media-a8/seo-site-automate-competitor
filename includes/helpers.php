@@ -164,7 +164,7 @@ function page_exists(string $root, string $slug): bool
 /**
  * Published articles: both .html and .json. Newest date first, then slug.
  *
- * @return list<array{slug:string,title:string,description:string,date:string}>
+ * @return list<array{slug:string,title:string,description:string,date:string,image:string}>
  */
 function list_articles(string $root): array
 {
@@ -179,11 +179,13 @@ function list_articles(string $root): array
         }
 
         $meta = load_json($jsonPath);
+        $social = is_array($meta['social_tags'] ?? null) ? $meta['social_tags'] : [];
         $items[] = [
             'slug' => strtolower($base),
             'title' => (string) ($meta['meta_title'] ?? ''),
             'description' => (string) ($meta['meta_description'] ?? ''),
             'date' => (string) ($meta['date'] ?? ''),
+            'image' => trim((string) ($social['og_image'] ?? '')),
         ];
     }
 

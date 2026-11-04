@@ -80,12 +80,18 @@ if ($slug === 'articles') {
 
     $cards = '';
     foreach ($articles as $article) {
+        $cover = '';
+        if ($article['image'] !== '') {
+            $cover = '<img class="card__cover" src="' . e($article['image']) . '" alt="' . e($article['title']) . '">';
+        }
         $cards .= '<a class="card" href="/articles/' . e($article['slug']) . '">'
+            . $cover
             . '<h3>' . e($article['title']) . '</h3>'
             . '<p>' . e($article['description']) . '</p>'
             . '</a>';
     }
-    $listHtml = '<div class="feature-row">' . $cards . '</div>';
+    $listHtml = '<style>.card__cover{display:block;width:100%;height:180px;object-fit:cover}</style>'
+        . '<div class="feature-row">' . $cards . '</div>';
 
     $marker = '<!--ARTICLE_LIST-->';
     if (strpos($bodyHtml, $marker) !== false) {
